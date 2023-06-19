@@ -1,6 +1,6 @@
 const BREEDS_URL = 'https://api.thecatapi.com/v1/breeds';
 const API_KEY =
-  'live_P2Spxc1aBtbpL0qSmUXZGLjJn7MNbol18Wj7A0liYsyvJzqeNmL2lGZTrxZnladk';
+  'live_17X3mpDzfeBN6Ahqmom77hwWWo0TzP8MtgJfxUHV538JA4XbVM9ETAeqp0EH8afi';
 
 function fetchBreeds() {
   const params = new URLSearchParams({
