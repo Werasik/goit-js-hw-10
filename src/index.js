@@ -1,47 +1,63 @@
-import './css/styles.css';
+import { fetchBreeds, fetchCatByBreed } from './cat-api';
 import Notiflix from 'notiflix';
-import debounce from 'lodash/debounce';
-import { fetchCountries } from './fetchcountries';
+import SlimSelect from 'slim-select';
+import 'slim-select/dist/slimselect.css';
 
-const DEBOUNCE_DELAY = 300;
-const countryList = document.querySelector('.country-list');
-const aboutCountry = document.querySelector('.country-info');
+const select = document.querySelector('.breed-select');
+select.addEventListener('change', onChangeSelect);
 
-const debounceFunction = debounce(fetchCountriesWithDebounce, DEBOUNCE_DELAY);
-let input = document.getElementById('search-box');
-input.addEventListener('input', debounceFunction);
+const divPicture = document.querySelector('.cat-info-picture');
+const divInfo = document.querySelector('.cat-info-desc');
+const loader = document.querySelector('.loader');
 
-function fetchCountriesWithDebounce(event) {
-    const name = event.target.value.trim();
-    if (name.length === 0) {
-        countryList.innerHTML = '';
-        aboutCountry.innerHTML = '';
-    }
-    if (name.length >= 1) {
-        fetchCountries(name).then(data => {
-            console.log(data);
-            countryList.innerHTML = '';
-            aboutCountry.innerHTML = '';
-            if (data && data.length >= 10) {
-                Notiflix.Notify.warning('Too many countries found');
-            } else if (data.length > 1) {
-                for (let i = 0; i < data.length; i++) {
-                    countryList.insertAdjacentHTML(
-                        'beforeend',
-                        `<li><img src="${data[i].flags.svg}" class="image">${data[i].name.common}</li>`
-                    );
-                }
-            } else if (data.length === 1) {
-                const languageBlock = Object.values(data[0].languages).join(', ');
-                aboutCountry.insertAdjacentHTML(
-                    'afterbegin',
-                    `<h1 class="title"><img src="${data[0].flags.svg}" class="image">${data[0].name.official}</h1><ul class="aboutcountrylist"><li>Capital: ${data[0].capital}</li><li>Population: ${data[0].population}</li><li>Flag: <img src="${data[0].flags.svg}" class="image"></li><li>Language: ${languageBlock}</li></ul>`
-                );
-            } else {
-                Notiflix.Notify.failure('Country not found');
-            }
-        }).catch(error => {
-            console.error('Error fetching country data:', error);
-        });
-    }
+fetchAndRenderBreeds();
+
+function fetchAndRenderBreeds() {
+  loader.classList.remove('invisible');
+  fetchBreeds()
+    .then(cats => updateSelect(cats))
+    .catch(error => {
+      Notiflix.Notify.failure(
+        'Oops! Something went wrong! Try reloading the page!'
+      );
+    })
+    .finally(() => {
+      loader.classList.add('invisible');
+      select.classList.remove('invisible');
+    });
+}
+
+function onChangeSelect(e) {
+  loader.classList.remove('invisible');
+  divPicture.innerHTML = '';
+  divInfo.innerHTML = '';
+  const breedId = e.target.value;
+
+  fetchCatByBreed(breedId)
+    .then(breed => updateCatInfo(breed))
+    .catch(error => {
+      Notiflix.Notify.failure(
+        'Oops! Something went wrong! Try reloading the page!'
+      );
+    })
+    .finally(() => loader.classList.add('invisible'));
+}
+
+function updateSelect(cats) {
+  const markupBreeds = cats
+    .map(({ reference_image_id, name }) => {
+      return `<option value =${reference_image_id}>${name}</option>`;
+    })
+    .join('');
+  select.insertAdjacentHTML('beforeend', markupBreeds);
+  new SlimSelect({
+    select: '#single',
+  });
+}
+
+function updateCatInfo(breed) {
+  const markupPicture = `<img class="cat-info-picture" src='${breed.url}' alt='${breed.id}' width='400'>`;
+  const markupDesc = `<h1 class="cat-info-desc">${breed.breeds[0].name}</h1><p class="cat-info-desc">${breed.breeds[0].description}</p><p class="cat-info-desc"><b>Temperament:</b> ${breed.breeds[0].temperament}</p>`;
+  divPicture.insertAdjacentHTML('beforeend', markupPicture);
+  divInfo.insertAdjacentHTML('beforeend', markupDesc);
 }
